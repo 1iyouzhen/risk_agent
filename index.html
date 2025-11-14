@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>金融AI风险评估系统 - 智能风控助手</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .chat-message {
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .typing-indicator span {
+            animation: blink 1.4s infinite;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes blink {
+            0%, 60%, 100% { opacity: 0.3; }
+            30% { opacity: 1; }
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-4px);
+            transition: all 0.3s ease;
+        }
+        
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <!-- 顶部导航栏 -->
+    <nav class="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-8">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 gradient-bg rounded-lg flex items-center justify-center">
+                            <i class="fas fa-shield-alt text-white text-xl"></i>
+                        </div>
+                        <span class="text-xl font-bold text-gray-900">金融AI风控</span>
+                    </div>
+                    <div class="hidden md:flex space-x-6">
+                        <a href="#" class="text-gray-700 hover:text-purple-600 font-medium transition">风险评估</a>
+                        <a href="#" class="text-gray-700 hover:text-purple-600 font-medium transition">知识图谱</a>
+                        <a href="#" class="text-gray-700 hover:text-purple-600 font-medium transition">报告中心</a>
+                        <a href="#" class="text-gray-700 hover:text-purple-600 font-medium transition">API文档</a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition">
+                        <i class="fas fa-bell"></i>
+                    </button>
+                    <button class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                    <div id="userSection" style="display: none;">
+                        <div class="flex items-center space-x-3">
+                            <span id="userName" class="text-gray-700 font-medium"></span>
+                            <button id="logoutBtn" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition">
+                                退出
+                            </button>
+                        </div>
+                    </div>
+                    <button id="loginBtn" class="px-6 py-2 gradient-bg text-white rounded-lg hover:opacity-90 transition font-medium">
+                        登录
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容区 -->
+    <div class="pt-20">
+        <div class="max-w-7xl mx-auto px-6 py-8">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- 左侧边栏 - 历史对话 -->
+                <div class="lg:col-span-1 bg-white rounded-xl shadow-sm border border-gray-200 p-6 h-[calc(100vh-140px)] overflow-y-auto scrollbar-hide">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-lg font-semibold text-gray-900">历史对话</h2>
+                        <button class="p-2 hover:bg-gray-100 rounded-lg transition">
+                            <i class="fas fa-plus text-gray-600"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <div class="p-3 bg-purple-50 border border-purple-200 rounded-lg cursor-pointer hover:bg-purple-100 transition">
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-gray-900 mb-1">三木集团风险评估</p>
+                                    <p class="text-xs text-gray-500">2小时前</p>
+                                </div>
+                                <i class="fas fa-ellipsis-v text-gray-400"></i>
+                            </div>
+                        </div>
+
+                        <div class="p-3 bg-white border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-gray-900 mb-1">农产品行业系统性风险</p>
+                                    <p class="text-xs text-gray-500">昨天</p>
+                                </div>
+                                <i class="fas fa-ellipsis-v text-gray-400"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="p-3 bg-white border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-gray-900 mb-1">冀凯股份信用评分分析</p>
+                                    <p class="text-xs text-gray-500">3天前</p>
+                                </div>
+                                <i class="fas fa-ellipsis-v text-gray-400"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="p-3 bg-white border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-gray-900 mb-1">海螺新材关联企业风险</p>
+                                    <p class="text-xs text-gray-500">1周前</p>
+                                </div>
+                                <i class="fas fa-ellipsis-v text-gray-400"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 中间主聊天区 -->
+                <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col h-[calc(100vh-140px)]">
+                    
+                    <!-- 聊天消息区域 -->
+                    <div id="chatMessages" class="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-hide">
+                        
+                        <!-- 欢迎界面 -->
+                        <div id="welcomeScreen" class="flex flex-col items-center justify-center h-full text-center">
+                            <div class="w-20 h-20 gradient-bg rounded-2xl flex items-center justify-center mb-6">
+                                <i class="fas fa-robot text-white text-4xl"></i>
+                            </div>
+                            <h1 class="text-3xl font-bold text-gray-900 mb-3">金融AI风险评估助手</h1>
+                            <p class="text-gray-600 mb-8 max-w-2xl">
+                                集成知识图谱、RAG检索和深度学习模型的智能风控系统<br>
+                                为您提供专业的风险评估、预警和决策支持服务
+                            </p>
+                            
+                            <!-- 快捷功能卡片 -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-3xl">
+                                <div class="feature-card p-5 bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl border border-purple-200 cursor-pointer text-left">
+                                    <div class="flex items-start space-x-3">
+                                        <div class="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                                            <i class="fas fa-chart-line text-white"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="font-semibold text-gray-900 mb-1">风险评估</h3>
+                                            <p class="text-sm text-gray-600">基于多维度数据分析企业风险状况</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="feature-card p-5 bg-gradient-to-br from-green-50 to-teal-50 rounded-xl border border-green-200 cursor-pointer text-left">
+                                    <div class="flex items-start space-x-3">
+                                        <div class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                                            <i class="fas fa-project-diagram text-white"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="font-semibold text-gray-900 mb-1">关系图谱</h3>
+                                            <p class="text-sm text-gray-600">分析企业关联关系和风险传导</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="feature-card p-5 bg-gradient-to-br from-orange-50 to-red-50 rounded-xl border border-orange-200 cursor-pointer text-left">
+                                    <div class="flex items-start space-x-3">
+                                        <div class="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                                            <i class="fas fa-file-alt text-white"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="font-semibold text-gray-900 mb-1">生成报告</h3>
+                                            <p class="text-sm text-gray-600">自动生成结构化风险评估报告</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="feature-card p-5 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 cursor-pointer text-left">
+                                    <div class="flex items-start space-x-3">
+                                        <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                                            <i class="fas fa-brain text-white"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="font-semibold text-gray-900 mb-1">智能决策</h3>
+                                            <p class="text-sm text-gray-600">提供个性化风险应对建议</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 示例问题 -->
+                            <div class="mt-8 w-full max-w-3xl">
+                                <p class="text-sm text-gray-500 mb-3">试试这些问题：</p>
+                                <div class="flex flex-wrap gap-2">
+                                    <button class="example-question px-4 py-2 bg-white border border-gray-300 rounded-full text-sm text-gray-700 hover:border-purple-500 hover:text-purple-600 transition">
+                                        查询三木集团的最新风险状况
+                                    </button>
+                                    <button class="example-question px-4 py-2 bg-white border border-gray-300 rounded-full text-sm text-gray-700 hover:border-purple-500 hover:text-purple-600 transition">
+                                        分析农产品行业的系统性风险
+                                    </button>
+                                    <button class="example-question px-4 py-2 bg-white border border-gray-300 rounded-full text-sm text-gray-700 hover:border-purple-500 hover:text-purple-600 transition">
+                                        生成海螺新材的风险评估报告
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                    </div>
+
+                    <!-- 输入区域 -->
+                    <div class="border-t border-gray-200 p-4">
+                        <div class="flex items-end space-x-3">
+                            <div class="flex-1 relative">
+                                <textarea 
+                                    id="userInput" 
+                                    rows="1" 
+                                    placeholder="输入您的问题，例如：查询某企业的风险状况..." 
+                                    class="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                                    style="max-height: 200px;"
+                                ></textarea>
+                                <button class="absolute right-3 bottom-3 text-gray-400 hover:text-gray-600 transition">
+                                    <i class="fas fa-paperclip"></i>
+                                </button>
+                            </div>
+                            <button 
+                                id="sendButton" 
+                                class="px-6 py-3 gradient-bg text-white rounded-xl hover:opacity-90 transition font-medium flex items-center space-x-2"
+                            >
+                                <span>发送</span>
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">
+                            <i class="fas fa-info-circle"></i> 
+                            AI生成的内容可能不准确，请谨慎使用并核实重要信息
+                        </p>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+
+    <!-- 登录模态框 -->
+    <div id="loginModal" class="modal">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 gradient-bg rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-shield-alt text-white text-2xl"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-900">登录系统</h2>
+                <p class="text-gray-600 mt-2">访问金融AI风险评估系统</p>
+            </div>
+            
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">用户名</label>
+                    <input 
+                        type="text" 
+                        id="loginUsername" 
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        placeholder="请输入用户名"
+                        required
+                    >
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">密码</label>
+                    <input 
+                        type="password" 
+                        id="loginPassword" 
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        placeholder="请输入密码"
+                        required
+                    >
+                </div>
+                
+                <div id="loginError" class="text-red-500 text-sm" style="display: none;"></div>
+                
+                <button 
+                    type="submit" 
+                    class="w-full py-3 gradient-bg text-white rounded-lg hover:opacity-90 transition font-medium"
+                >
+                    登录
+                </button>
+                
+                <button 
+                    type="button" 
+                    id="cancelLogin"
+                    class="w-full py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium"
+                >
+                    取消
+                </button>
+            </form>
+            
+            <div class="mt-6 text-center text-sm text-gray-500">
+                <p>测试账号: admin / admin123</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript 交互逻辑 -->
+    <script>
+        // API配置
+        const API_BASE_URL = 'http://localhost:8000';
+        
+        // 全局状态
+        let currentUser = null;
+        let authToken = null;
+        let conversationHistory = [];
+        
+        const chatMessages = document.getElementById('chatMessages');
+        const welcomeScreen = document.getElementById('welcomeScreen');
+        const userInput = document.getElementById('userInput');
+        const sendButton = document.getElementById('sendButton');
+        const exampleQuestions = document.querySelectorAll('.example-question');
+        
+        // 登录相关元素
+        const loginModal = document.getElementById('loginModal');
+        const loginBtn = document.getElementById('loginBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const loginForm = document.getElementById('loginForm');
+        const cancelLogin = document.getElementById('cancelLogin');
+        const userSection = document.getElementById('userSection');
+        const loginError = document.getElementById('loginError');
+        
+        // 初始化：检查本地存储的登录状态
+        window.addEventListener('load', function() {
+            const savedUser = localStorage.getItem('currentUser');
+            const savedToken = localStorage.getItem('authToken');
+            if (savedUser && savedToken) {
+                currentUser = JSON.parse(savedUser);
+                authToken = savedToken;
+                updateUIAfterLogin();
+            }
+        });
+        
+        // 登录按钮点击
+        loginBtn.addEventListener('click', function() {
+            loginModal.classList.add('active');
+        });
+        
+        // 取消登录
+        cancelLogin.addEventListener('click', function() {
+            loginModal.classList.remove('active');
+            loginForm.reset();
+            loginError.style.display = 'none';
+        });
+        
+        // 登录表单提交
+        loginForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    currentUser = data.user;
+                    authToken = data.token;
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    localStorage.setItem('authToken', authToken);
+                    updateUIAfterLogin();
+                    loginModal.classList.remove('active');
+                    loginForm.reset();
+                    loginError.style.display = 'none';
+                } else {
+                    loginError.textContent = data.message || '登录失败，请检查用户名和密码';
+                    loginError.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('登录错误:', error);
+                loginError.textContent = '连接服务器失败，请确保后端服务已启动';
+                loginError.style.display = 'block';
+            }
+        });
+        
+        // 退出登录
+        logoutBtn.addEventListener('click', function() {
+            currentUser = null;
+            authToken = null;
+            conversationHistory = [];
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('authToken');
+            updateUIAfterLogout();
+        });
+        
+        function updateUIAfterLogin() {
+            loginBtn.style.display = 'none';
+            userSection.style.display = 'block';
+            document.getElementById('userName').textContent = currentUser.username;
+        }
+        
+        function updateUIAfterLogout() {
+            loginBtn.style.display = 'block';
+            userSection.style.display = 'none';
+            // 清空聊天记录
+            chatMessages.innerHTML = '';
+            if (welcomeScreen) {
+                welcomeScreen.style.display = 'flex';
+            }
+        }
+        
+        // 自动调整输入框高度
+        userInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+        });
+        
+        // 示例问题点击
+        exampleQuestions.forEach(button => {
+            button.addEventListener('click', function() {
+                const question = this.textContent.trim();
+                userInput.value = question;
+                sendMessage();
+            });
+        });
+        
+        // 发送消息
+        sendButton.addEventListener('click', sendMessage);
+        userInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (!message) return;
+            
+            // 检查登录状态
+            if (!authToken) {
+                alert('请先登录后再使用');
+                loginModal.classList.add('active');
+                return;
+            }
+            
+            // 隐藏欢迎界面
+            if (welcomeScreen) {
+                welcomeScreen.style.display = 'none';
+            }
+            
+            // 添加用户消息
+            addMessage(message, 'user');
+            conversationHistory.push({ role: 'user', content: message });
+            userInput.value = '';
+            userInput.style.height = 'auto';
+            
+            // 显示加载状态
+            showTypingIndicator();
+            
+            try {
+                // 调用后端API
+                const response = await fetch(`${API_BASE_URL}/api/chat/query`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ 
+                        query: message,
+                        history: conversationHistory.slice(-10) // 只发送最近10轮对话
+                    })
+                });
+                
+                hideTypingIndicator();
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const formattedResponse = formatAIResponse(data);
+                    addMessage(formattedResponse, 'assistant');
+                    conversationHistory.push({ role: 'assistant', content: data.answer });
+                } else {
+                    const errorData = await response.json();
+                    addMessage(`<p class="text-red-600">错误: ${errorData.message || '查询失败'}</p>`, 'assistant');
+                }
+            } catch (error) {
+                hideTypingIndicator();
+                console.error('查询错误:', error);
+                addMessage(`<p class="text-red-600">连接服务器失败，请确保后端服务已启动</p>`, 'assistant');
+            }
+        }
+        
+        function addMessage(content, role) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'chat-message flex items-start space-x-3';
+            
+            if (role === 'user') {
+                messageDiv.innerHTML = `
+                    <div class="flex-shrink-0 w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                        <i class="fas fa-user text-gray-600 text-sm"></i>
+                    </div>
+                    <div class="flex-1 bg-gray-100 rounded-2xl px-4 py-3">
+                        <p class="text-gray-900">${escapeHtml(content)}</p>
+                    </div>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <div class="flex-shrink-0 w-8 h-8 gradient-bg rounded-full flex items-center justify-center">
+                        <i class="fas fa-robot text-white text-sm"></i>
+                    </div>
+                    <div class="flex-1">
+                        <div class="bg-white border border-gray-200 rounded-2xl px-4 py-3">
+                            ${content}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            const indicator = document.createElement('div');
+            indicator.id = 'typingIndicator';
+            indicator.className = 'chat-message flex items-start space-x-3';
+            indicator.innerHTML = `
+                <div class="flex-shrink-0 w-8 h-8 gradient-bg rounded-full flex items-center justify-center">
+                    <i class="fas fa-robot text-white text-sm"></i>
+                </div>
+                <div class="flex-1 bg-white border border-gray-200 rounded-2xl px-4 py-3">
+                    <div class="typing-indicator flex space-x-1">
+                        <span class="w-2 h-2 bg-gray-400 rounded-full"></span>
+                        <span class="w-2 h-2 bg-gray-400 rounded-full"></span>
+                        <span class="w-2 h-2 bg-gray-400 rounded-full"></span>
+                    </div>
+                </div>
+            `;
+            chatMessages.appendChild(indicator);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        function hideTypingIndicator() {
+            const indicator = document.getElementById('typingIndicator');
+            if (indicator) {
+                indicator.remove();
+            }
+        }
+
+        function generateResponse(message) {
+            const lowerMessage = message.toLowerCase();
+            
+            if (lowerMessage.includes('三木集团')) {
+                return `
+                    <p class="text-gray-900 mb-4">根据最新数据分析，三木集团的风险评估结果如下：</p>
+                    <div class="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-lg p-4 mb-4">
+                        <div class="flex items-center space-x-2 mb-2">
+                            <i class="fas fa-exclamation-triangle text-red-500"></i>
+                            <span class="font-semibold text-gray-900">风险评分：0.72（中高风险）</span>
+                        </div>
+                        <p class="text-sm text-gray-700">评估时间：2023-11-27</p>
+                    </div>
+                    <div class="space-y-3">
+                        <div>
+                            <h4 class="font-semibold text-gray-900 mb-2">📊 主要风险因素：</h4>
+                            <ul class="text-sm text-gray-700 space-y-1 ml-4">
+                                <li>• 信用评分偏低（620分），低于行业平均水平</li>
+                                <li>• 近12个月存在3次违约记录</li>
+                                <li>• 市场指数波动较大，外部环境不利</li>
+                                <li>• 现金流压力增加，流动性风险上升</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-900 mb-2">💡 应对建议：</h4>
+                            <ul class="text-sm text-gray-700 space-y-1 ml-4">
+                                <li>• 建议加强贷后管理，增加监控频次至每周一次</li>
+                                <li>• 考虑要求提供额外担保或抵押物</li>
+                                <li>• 建议购买信用保险转移部分风险</li>
+                                <li>• 密切关注关联企业风险传导情况</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex space-x-2">
+                        <button class="px-4 py-2 bg-purple-100 text-purple-700 rounded-lg text-sm hover:bg-purple-200 transition">
+                            <i class="fas fa-download mr-1"></i>下载完整报告
+                        </button>
+                        <button class="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm hover:bg-blue-200 transition">
+                            <i class="fas fa-project-diagram mr-1"></i>查看关系图谱
+                        </button>
+                    </div>
+                `;
+            }
+
+            if (lowerMessage.includes('农产品') || lowerMessage.includes('系统性风险')) {
+                return `
+                    <p class="text-gray-900 mb-4">农产品行业系统性风险分析报告：</p>
+                    <div class="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                        <div class="flex items-center space-x-2 mb-2">
+                            <i class="fas fa-chart-line text-yellow-600"></i>
+                            <span class="font-semibold text-gray-900">行业风险指数：0.58（中等风险）</span>
+                        </div>
+                        <p class="text-sm text-gray-700">分析周期：2023年1月-11月</p>
+                    </div>
+                    <div class="space-y-3">
+                        <div>
+                            <h4 class="font-semibold text-gray-900 mb-2">🔍 风险传导路径：</h4>
+                            <div class="text-sm text-gray-700 space-y-2">
+                                <p>通过知识图谱分析发现，农产品行业存在以下风险传导链：</p>
+                                <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                                    <p class="font-mono text-xs">原材料供应商 → 农产品加工企业 → 批发商 → 零售终端</p>
+                                </div>
+                                <p>上游供应链波动对下游企业影响显著，建议关注：</p>
+                                <ul class="ml-4 space-y-1">
+                                    <li>• 季节性价格波动风险</li>
+                                    <li>• 政策调控影响</li>
+                                    <li>• 国际市场价格联动</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-900 mb-2">📈 趋势预测：</h4>
+                            <p class="text-sm text-gray-700">基于PatchTST模型预测，未来3个月行业风险指数预计在0.55-0.62区间波动，建议采取监测型策略。</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (lowerMessage.includes('海螺新材') || lowerMessage.includes('报告')) {
+                return `
+                    <p class="text-gray-900 mb-4">海螺新材风险评估报告已生成：</p>
+                    <div class="bg-gradient-to-r from-green-50 to-teal-50 border border-green-200 rounded-lg p-4 mb-4">
+                        <div class="flex items-center space-x-2 mb-2">
+                            <i class="fas fa-check-circle text-green-500"></i>
+                            <span class="font-semibold text-gray-900">风险评分：0.42（低风险）</span>
+                        </div>
+                        <p class="text-sm text-gray-700">企业运营状况良好，财务指标健康</p>
+                    </div>
+                    <div class="bg-white border border-gray-200 rounded-lg p-4 mb-3">
+                        <h4 class="font-semibold text-gray-900 mb-3">📄 报告摘要</h4>
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <p class="text-gray-500 mb-1">信用评分</p>
+                                <p class="font-semibold text-gray-900">720分</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-500 mb-1">违约记录</p>
+                                <p class="font-semibold text-gray-900">0次</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-500 mb-1">市场表现</p>
+                                <p class="font-semibold text-green-600">稳定增长</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-500 mb-1">关联风险</p>
+                                <p class="font-semibold text-green-600">低</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button class="px-4 py-2 gradient-bg text-white rounded-lg text-sm hover:opacity-90 transition">
+                            <i class="fas fa-file-pdf mr-1"></i>下载PDF报告
+                        </button>
+                        <button class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 transition">
+                            <i class="fas fa-file-csv mr-1"></i>导出CSV
+                        </button>
+                    </div>
+                `;
+            }
+
+            // 默认响应
+            return `
+                <p class="text-gray-900 mb-4">我是金融AI风险评估助手，我可以帮您：</p>
+                <div class="space-y-2">
+                    <div class="flex items-start space-x-2">
+                        <i class="fas fa-check text-purple-500 mt-1"></i>
+                        <p class="text-sm text-gray-700">查询企业的实时风险评分和历史趋势</p>
+                    </div>
+                    <div class="flex items-start space-x-2">
+                        <i class="fas fa-check text-purple-500 mt-1"></i>
+                        <p class="text-sm text-gray-700">分析行业系统性风险和传导路径</p>
+                    </div>
+                    <div class="flex items-start space-x-2">
+                        <i class="fas fa-check text-purple-500 mt-1"></i>
+                        <p class="text-sm text-gray-700">生成结构化风险评估报告（支持PDF/CSV/HTML）</p>
+                    </div>
+                    <div class="flex items-start space-x-2">
+                        <i class="fas fa-check text-purple-500 mt-1"></i>
+                        <p class="text-sm text-gray-700">提供基于知识图谱的关联企业风险分析</p>
+                    </div>
+                    <div class="flex items-start space-x-2">
+                        <i class="fas fa-check text-purple-500 mt-1"></i>
+                        <p class="text-sm text-gray-700">给出个性化的风险应对建议和决策支持</p>
+                    </div>
+                </div>
+                <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p class="text-sm text-blue-800">
+                        <i class="fas fa-lightbulb mr-1"></i>
+                        提示：您可以询问具体企业（如"三木集团"、"冀凯股份"）的风险状况，或请求生成评估报告。
+                    </p>
+                </div>
+            `;
+        }
+        
+        function formatAIResponse(data) {
+            // 格式化后端返回的数据
+            let html = '';
+            
+            if (data.answer) {
+                html += `<div class="text-gray-900 mb-4">${escapeHtml(data.answer).replace(/\n/g, '<br>')}</div>`;
+            }
+            
+            // 显示风险评分（如果有）
+            if (data.risk_score !== undefined) {
+                const riskLevel = data.risk_score >= 0.7 ? '高风险' : data.risk_score >= 0.5 ? '中风险' : '低风险';
+                const riskColor = data.risk_score >= 0.7 ? 'red' : data.risk_score >= 0.5 ? 'yellow' : 'green';
+                html += `
+                    <div class="bg-gradient-to-r from-${riskColor}-50 to-${riskColor}-100 border border-${riskColor}-200 rounded-lg p-4 mb-4">
+                        <div class="flex items-center space-x-2">
+                            <i class="fas fa-chart-line text-${riskColor}-600"></i>
+                            <span class="font-semibold text-gray-900">风险评分：${data.risk_score.toFixed(4)}（${riskLevel}）</span>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // 显示检索来源
+            if (data.hits && data.hits.length > 0) {
+                html += `
+                    <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p class="text-sm text-blue-800 mb-2">
+                            <i class="fas fa-database mr-1"></i>
+                            检索到 ${data.hits.length} 条相关信息
+                        </p>
+                        <details class="text-xs text-blue-700">
+                            <summary class="cursor-pointer hover:text-blue-900">查看检索来源</summary>
+                            <ul class="mt-2 space-y-1 ml-4">
+                                ${data.hits.map((hit, i) => `<li>${i+1}. ${escapeHtml(hit.text?.substring(0, 100) || '')}...</li>`).join('')}
+                            </ul>
+                        </details>
+                    </div>
+                `;
+            }
+            
+            return html || '<p class="text-gray-600">暂无相关信息</p>';
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

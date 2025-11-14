@@ -1,0 +1,41 @@
+{
+  "server": {
+    "host": "0.0.0.0",
+    "port": 8000,
+    "cors_origins": ["http://localhost:3000", "http://127.0.0.1:5500"]
+  },
+  "database": {
+    "sqlite_path": "risk_agent.sqlite",
+    "neo4j_uri": "bolt://localhost:7687",
+    "neo4j_user": "neo4j",
+    "neo4j_password": "your_password"
+  },
+  "llm": {
+    "provider": "deepseek",
+    "api_key": "sk-your-api-key-here",
+    "base_url": "https://api.deepseek.com",
+    "chat_model": "deepseek-chat",
+    "embed_model": "text-embedding-3-small"
+  },
+  "embedding": {
+    "provider": "baai",
+    "model": "BAAI/bge-m3",
+    "use_prefix": true
+  },
+  "rag": {
+    "top_k": 3,
+    "min_score": 0.25,
+    "min_sources": 2,
+    "knowledge_dirs": ["knowledge_docs"]
+  },
+  "users": {
+    "admin": {
+      "password": "admin123",
+      "role": "admin"
+    },
+    "analyst": {
+      "password": "analyst123",
+      "role": "analyst"
+    }
+  }
+}
