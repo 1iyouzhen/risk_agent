@@ -3,7 +3,7 @@ import pandas as pd
 from pathlib import Path
 
 """
-数据清洗
+创建节点导入neo4j中
 """
 
 CLEAN_PATH = Path(__file__).resolve().parents[1] / "data/cleaned"    # 保存路径
