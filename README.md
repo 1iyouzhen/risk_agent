@@ -185,7 +185,7 @@ python app.py --export --output comprehensive_report.csv --db custom_db.sqlite
 
 ### 7. 知识图谱构建
 ```bash
-# 爬取企业数据并构建图谱
+# 获取数据并构建图谱
 python get_graph_data/crawler/company_info.py
 python get_graph_data/crawler/market_index.py
 python get_graph_data/crawler/news_sentiment.py
