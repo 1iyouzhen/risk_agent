@@ -1,7 +1,7 @@
 from neo4j import GraphDatabase
 
 URI = "bolt://localhost:7687"
-AUTH = ("neo4j", "123456lyz")
+AUTH = ("username", "password")
 
 driver = GraphDatabase.driver(URI, auth=AUTH)
 
@@ -38,3 +38,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
