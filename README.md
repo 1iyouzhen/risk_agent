@@ -363,7 +363,7 @@ python -c "from src.agent.neo4j_client import Neo4jClient; print(Neo4jClient().a
 python -c "from src.agent.models.risk_forecast import RiskForecaster; print(RiskForecaster().score({'amount':1000, 'income':5000, 'credit_score':650, 'delinquencies':0, 'market_index':1200}))"
 ```
 
-## 项目结构
+## 项目结构（不含前后端）
 
 ```
 risk_agent/
@@ -377,7 +377,6 @@ risk_agent/
 │   │   ├── knowledge_base.py # 知识库
 │   │   ├── graph_client.py  # 图数据库客户端
 │   │   ├── neo4j_client.py  # Neo4j集成
-│   │   ├── llm_client.py    # 大模型客户端
 │   │   ├── storage.py       # 数据存储
 │   │   ├── reporting.py     # 报告生成
 │   │   └── decision.py      # 决策引擎
