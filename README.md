@@ -207,6 +207,7 @@ python src/web/server.py
 uvicorn src.web.server:app --host 0.0.0.0 --port 8000 --reload
 ```
 > 注意：单独运行batch_embed.py时需要通过该项目所有代码同目录之下的终端采取python -m src.agent.batch_embed --dir ...(运行模块)
+> 
 **API端点**：
 - `POST /api/risk/assess` - 风险评估
 - `GET /api/risk/report/{entity_id}` - 获取报告
