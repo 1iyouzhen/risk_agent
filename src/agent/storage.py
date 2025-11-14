@@ -1,4 +1,4 @@
-# File: src/agent/storage.py
+# src/agent/storage.py
 """
 Optimized Storage (sqlite) compatible with existing schema and batch embedding.
 """
