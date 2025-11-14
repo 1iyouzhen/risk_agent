@@ -5,7 +5,7 @@ from src.agent.storage import Storage
 from src.agent.rag import EmbeddingProvider, build_terms, embed_text
 from pathlib import Path
 
-folder = r"D:/金融人工智能比赛_深圳/knowledge_docs"
+folder = r" "
 
 def read_text_file(path):
     with open(path, 'r', encoding='utf-8', errors='ignore') as f:
@@ -68,3 +68,4 @@ if __name__ == '__main__':
     parser.add_argument('--provider', type=str, default=None, help="指定 embedding 模型来源[openai/baai/local]")
     args = parser.parse_args()
     main(args.dir, args.db, args.offset, args.provider)
+
