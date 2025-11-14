@@ -101,8 +101,8 @@ export OPENAI_EMBED_MODEL="text-embedding-3-small"
 
 # Neo4j数据库配置（可选）
 export NEO4J_URI="bolt://localhost:7687"
-export NEO4J_USER="neo4j"
-export NEO4J_PASSWORD="your-password"
+export NEO4J_USER="your_username"
+export NEO4J_PASSWORD="your_password"
 
 # RAG检索配置
 export RAG_TOP_K=3
