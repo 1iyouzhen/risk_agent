@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            display: none;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <h1>登录功能测试</h1>
+    
+    <form id="loginForm">
+        <div class="form-group">
+            <label>用户名:</label>
+            <input type="text" id="username" value="admin" required>
+        </div>
+        
+        <div class="form-group">
+            <label>密码:</label>
+            <input type="password" id="password" value="admin123" required>
+        </div>
+        
+        <button type="submit">登录</button>
+    </form>
+    
+    <div id="result"></div>
+    
+    <script>
+        const API_BASE_URL = 'http://localhost:8000';
+        
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('result');
+            
+            resultDiv.style.display = 'block';
+            resultDiv.className = '';
+            resultDiv.textContent = '正在登录...';
+            
+            try {
+                console.log('发送登录请求...');
+                const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                console.log('响应状态:', response.status);
+                const data = await response.json();
+                console.log('响应数据:', data);
+                
+                if (response.ok) {
+                    resultDiv.className = 'success';
+                    resultDiv.innerHTML = `
+                        <strong>✓ 登录成功！</strong><br>
+                        用户名: ${data.user.username}<br>
+                        角色: ${data.user.role}<br>
+                        Token: ${data.token.substring(0, 20)}...
+                    `;
+                } else {
+                    resultDiv.className = 'error';
+                    resultDiv.textContent = `✗ 登录失败: ${data.message || '未知错误'}`;
+                }
+            } catch (error) {
+                console.error('登录错误:', error);
+                resultDiv.className = 'error';
+                resultDiv.innerHTML = `
+                    <strong>✗ 连接失败</strong><br>
+                    错误信息: ${error.message}<br>
+                    <br>
+                    <strong>可能的原因：</strong><br>
+                    1. 后端服务未启动（运行: python auth_server.py）<br>
+                    2. CORS配置问题<br>
+                    3. 网络连接问题<br>
+                    <br>
+                    请打开浏览器控制台查看详细错误信息
+                `;
+            }
+        });
+    </script>
+</body>
+</html>
