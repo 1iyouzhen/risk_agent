@@ -2,14 +2,18 @@ from neo4j import GraphDatabase
 import pandas as pd
 from pathlib import Path
 
-CLEAN_PATH = Path(__file__).resolve().parents[1] / "data/cleaned"
+"""
+数据清洗
+"""
+
+CLEAN_PATH = Path(__file__).resolve().parents[1] / "data/cleaned"    # 保存路径
 URI = "bolt://localhost:7687"
-AUTH = ("neo4j", "123456lyz")
+AUTH = ("your_username", "your_password")
 
 driver = GraphDatabase.driver(URI, auth=AUTH)
 
 def create_company_nodes(tx, row):
-    # 将 Pandas 的 row 转成 dict，防止 Series 的取值异常
+    # 将Pandas的row转成dict，防止Series的取值异常
     data = row.to_dict()
 
     # 给缺失字段设置默认值，防止 ParameterMissing
