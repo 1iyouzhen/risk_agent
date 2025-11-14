@@ -363,7 +363,7 @@ python -c "from src.agent.models.risk_forecast import RiskForecaster; print(Risk
 ## 项目结构
 
 ```
-金融人工智能比赛_深圳/
+risk_agent/
 ├── app.py                    # 主程序入口
 ├── train.py                  # 模型训练脚本
 ├── src/
