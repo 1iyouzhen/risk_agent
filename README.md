@@ -387,7 +387,7 @@ risk_agent/
 ├── graph_data/              # 图数据文件
 ├── html_reports/            # 生成的HTML报告
 ├── scripts/                 # 实用脚本
-└── requirements.txt         # 依赖包列表
+└── requirements.txt         # 依赖包列表（待更新）
 ```
 
 ## 更新日志
