@@ -103,8 +103,8 @@ class EmbeddingProvider:
     def _embed_batch_openai(self, texts: List[str]) -> Optional[List[List[float]]]:
         if not self.openai_key or not self.openai_base or not self.openai_model:
             return None
-        url = self.openai_base.rstrip('/') + '/v1/embeddings'
-        headers = {"Authorization": f"Bearer {self.openai_key}", "Content-Type": "application/json"}
+        url = ""                # 文本嵌入模型的URL
+        headers = {"Authorization": "Bearer sk-", "Content-Type": "application/json"}
         payload = {"model": self.openai_model, "input": texts}
         try:
             r = requests.post(url, headers=headers, json=payload, timeout=60)
