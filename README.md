@@ -391,6 +391,13 @@ risk_agent/
 └── requirements.txt         # 依赖包列表（待更新）
 ```
 
+>本次风险评估的模拟数据存储到synthetic_training.csv中了，也可以选择src.agent.app中模拟数据生成功能。
+>
+>通过程序访问app.py的功能可以参考
+><img width="1917" height="39" alt="1a55a95b-4ae2-4a57-9774-3a178363928d" src="https://github.com/user-attachments/assets/7057d1d9-ac4b-4779-af40-dce92f44b123" />
+
+
+
 ## 更新日志
 
 ### v2.0 (当前版本)
