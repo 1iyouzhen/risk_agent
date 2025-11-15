@@ -1,6 +1,6 @@
 
 """
-RAG utilities: unified embedding provider, sparse/dense helpers, retrieval that is compatible with Storage.
+RAG utilities
 """
 import json
 import math
