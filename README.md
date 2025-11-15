@@ -374,8 +374,9 @@ risk_agent/
 │   │   ├── models/          # 预测模型
 │   │   ├── config.py        # 配置管理
 │   │   ├── rag.py           # RAG检索
-│   │   ├── knowledge_base.py # 知识库
+│   │   ├── knowledge_base.py # 知识库导入（从knowledge_docs文件夹中加载）
 │   │   ├── graph_client.py  # 图数据库客户端
+│   │   ├──llm_client.py     # LLM的连接
 │   │   ├── neo4j_client.py  # Neo4j集成
 │   │   ├── storage.py       # 数据存储
 │   │   ├── reporting.py     # 报告生成
