@@ -77,7 +77,7 @@ ACTIVE_TOKENS = {}
 USER_SESSIONS = {}
 
 
-# ==================== 数据模型 ====================
+# 数据模型
 
 class LoginRequest(BaseModel):
     username: str
@@ -94,7 +94,7 @@ class User(BaseModel):
     role: str
 
 
-# ==================== 认证相关 ====================
+# 认证相关
 
 def create_token(username: str) -> str:
     """创建访问令牌"""
@@ -128,7 +128,7 @@ def verify_token(authorization: Optional[str] = Header(None)) -> str:
     return token_data["username"]
 
 
-# ==================== API端点 ====================
+# API端点
 
 @app.post("/api/auth/login")
 async def login(request: LoginRequest):
@@ -355,7 +355,7 @@ async def chat_query(request: ChatRequest, username: str = Depends(verify_token)
         </head>
         <body>
             <div class="container">
-                <h2>🔍 查询记录</h2>
+                <h2>查询记录</h2>
                 <div class="meta">
                     <p><strong>用户：</strong>{username}</p>
                     <p><strong>时间：</strong>{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
@@ -377,12 +377,12 @@ async def chat_query(request: ChatRequest, username: str = Depends(verify_token)
                     </div>
                 </div>
                 
-                <h3>📊 检索证据（{len(hits)}条）</h3>
+                <h3>检索证据（{len(hits)}条）</h3>
                 <div class="evidence">
                     {evidence_html if evidence_html else '<p>暂无检索结果</p>'}
                 </div>
                 
-                <h3>🤖 AI分析结果</h3>
+                <h3>AI分析结果</h3>
                 <div class="answer">
                     {answer.replace(chr(10), '<br>')}
                 </div>
@@ -603,3 +603,4 @@ if __name__ == "__main__":
     print("=" * 60)
     
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
