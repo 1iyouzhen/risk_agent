@@ -1,5 +1,4 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+
 """
 完整的认证和RAG查询服务器
 集成登录、多轮对话、RAG检索、知识图谱查询功能
@@ -23,7 +22,28 @@ from src.agent.knowledge_base import load_knowledge
 from src.agent.graph_client import GraphClient
 from src.agent.neo4j_client import Neo4jClient
 from src.agent.retriever import retrieve_all
-from src.agent.llm_client import LLMClient
+def llm_chat(messages, temperature=0.2):
+    from src.agent.config import OPENAI_API_KEY, OPENAI_CHAT_MODEL, OPENAI_BASE_URL, REQUEST_TIMEOUT, REQUEST_RETRIES
+    import json as _json
+    import time as _time
+    import requests as _requests
+    if not OPENAI_API_KEY:
+        return ""
+    url = OPENAI_BASE_URL.rstrip("/") + "/v1/chat/completions"
+    headers = {"Authorization": "Bearer " + OPENAI_API_KEY, "Content-Type": "application/json"}
+    payload = {"model": OPENAI_CHAT_MODEL, "messages": messages, "temperature": temperature}
+    last = None
+    for _ in range(max(1, REQUEST_RETRIES)):
+        try:
+            resp = _requests.post(url, headers=headers, data=_json.dumps(payload), timeout=REQUEST_TIMEOUT)
+            if resp.status_code == 200:
+                j = resp.json()
+                return j.get("choices", [{}])[0].get("message", {}).get("content", "")
+            last = Exception(f"http {resp.status_code}")
+        except Exception as e:
+            last = e
+        _time.sleep(0.5)
+    return ""
 
 app = FastAPI(title="金融AI风险评估系统")
 
@@ -200,14 +220,35 @@ async def chat_query(request: ChatRequest, username: str = Depends(verify_token)
         hits = []
         is_valid = False
     
+    # 统计检索来源
+    sources_stats = {}
+    for h in hits:
+        source = h.get("source", "unknown")
+        sources_stats[source] = sources_stats.get(source, 0) + 1
+    
     # 构建上下文
     context_parts = []
     
-    # 添加检索证据
+    # 添加检索证据（优化展示）
     if hits:
-        evidence_texts = [h.get("text", "") for h in hits if h.get("text")]
-        if evidence_texts:
-            context_parts.append("检索证据:\n" + "\n".join(evidence_texts[:TOP_K]))
+        evidence_by_source = {}
+        for h in hits:
+            source = h.get("source", "unknown")
+            if source not in evidence_by_source:
+                evidence_by_source[source] = []
+            text = h.get("text", "")
+            if text:
+                evidence_by_source[source].append(text)
+        
+        for source, texts in evidence_by_source.items():
+            source_name = {
+                "history": "历史评估记录",
+                "knowledge": "专业知识库",
+                "vector": "向量数据库",
+                "graph_csv": "关系图谱(CSV)",
+                "graph_neo4j": "知识图谱(Neo4j)"
+            }.get(source, source)
+            context_parts.append(f"【{source_name}】\n" + "\n".join(texts[:3]))
     
     # 添加对话历史
     if request.history:
@@ -215,7 +256,7 @@ async def chat_query(request: ChatRequest, username: str = Depends(verify_token)
             f"{msg['role']}: {msg['content']}" 
             for msg in request.history[-6:]  # 最近3轮对话
         ])
-        context_parts.append(f"对话历史:\n{history_text}")
+        context_parts.append(f"【对话历史】\n{history_text}")
     
     # 构建Prompt
     system_prompt = """你是专业的金融风控分析师。请基于提供的检索证据回答用户问题。
@@ -223,29 +264,37 @@ async def chat_query(request: ChatRequest, username: str = Depends(verify_token)
 要求：
 1. 如果检索证据不足，明确告知"知识库中暂无相关信息"，不要编造内容
 2. 如果有足够证据，输出结构化回答，包含：
-   【主要风险】：总结关键风险点
-   【指标说明】：解释相关指标和证据
-   【应对建议】：提出具体可执行的措施
-3. 保持专业、准确、简洁"""
+   【主要风险】：总结关键风险点（列表形式，每条独立成行）
+   【指标说明】：解释相关指标和证据（列表形式，每条独立成行）
+   【应对建议】：提出具体可执行的措施（列表形式，每条独立成行）
+3. 保持专业、准确、简洁
+4. 尽量引用检索证据中的具体数据和事实"""
     
     user_prompt = "\n\n".join(context_parts) + f"\n\n用户查询：{query}"
     
     # 调用LLM生成回答
     answer = ""
+    llm_error = None
+    
     if is_valid:
         try:
-            llm = LLMClient()
-            answer = llm.chat([
+            answer = llm_chat([
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
-            ], temperature=0.2)
+            ], temperature=0.25)
+            
+            if not answer:
+                answer = "AI服务返回为空，以下是检索到的相关信息：\n\n" + "\n".join([
+                    f"• {h.get('text', '')[:200]}" for h in hits[:5]
+                ])
         except Exception as e:
+            llm_error = str(e)
             print(f"LLM调用错误: {e}")
-            answer = "抱歉，AI服务暂时不可用。以下是检索到的相关信息：\n\n" + "\n".join([
-                f"• {h.get('text', '')[:200]}" for h in hits[:3]
+            answer = f"抱歉，AI服务暂时不可用（{llm_error[:100]}）。以下是检索到的相关信息：\n\n" + "\n".join([
+                f"• {h.get('text', '')[:200]}" for h in hits[:5]
             ])
     else:
-        answer = "知识库中暂无相关信息。请尝试：\n• 使用更具体的企业名称或关键词\n• 查询已有数据的企业（如：三木集团、海螺新材）\n• 检查数据库是否已初始化"
+        answer = "知识库中暂无相关信息。请尝试：\n• 使用更具体的企业名称或关键词\n• 查询已有数据的企业（如：三木集团、海螺新材、冀凯股份、农产品、胜利股份）\n• 运行 python app.py --demo 初始化数据库"
     
     # 保存到用户会话
     if username not in USER_SESSIONS:
@@ -255,44 +304,90 @@ async def chat_query(request: ChatRequest, username: str = Depends(verify_token)
         "query": query,
         "answer": answer,
         "timestamp": datetime.now().isoformat(),
-        "hits_count": len(hits)
+        "hits_count": len(hits),
+        "sources": sources_stats
     })
     
     # 保存查询记录到数据库
     try:
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         html_dir = os.path.join(os.getcwd(), "html_reports")
         os.makedirs(html_dir, exist_ok=True)
         
-        filename = f"query_{username}_{timestamp.replace(' ', '_').replace(':', '-')}.html"
+        filename = f"query_{username}_{timestamp}.html"
         filepath = os.path.join(html_dir, filename)
         
+        # 格式化检索证据
+        evidence_html = ""
+        for i, h in enumerate(hits[:10]):
+            source = h.get("source", "unknown")
+            score = h.get("score", 0.0)
+            text = h.get("text", "")[:500]
+            evidence_html += f"""
+            <div style="margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-left: 3px solid #667eea;">
+                <div style="color: #666; font-size: 12px; margin-bottom: 5px;">
+                    来源: {source} | 相关度: {score:.4f}
+                </div>
+                <div>{text}</div>
+            </div>
+            """
+        
         html_content = f"""
+        <!DOCTYPE html>
         <html>
         <head>
             <meta charset='utf-8'>
             <title>查询结果 - {query}</title>
             <style>
-                body {{ font-family: "Microsoft YaHei", sans-serif; margin: 40px; }}
-                h2 {{ color: #667eea; }}
-                .evidence {{ background: #f7f7f7; padding: 15px; border-radius: 8px; margin: 10px 0; }}
-                .answer {{ background: #e8f4f8; padding: 15px; border-radius: 8px; margin: 10px 0; }}
+                body {{ font-family: "Microsoft YaHei", sans-serif; margin: 40px; background: #f5f5f5; }}
+                .container {{ max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
+                h2 {{ color: #667eea; border-bottom: 2px solid #667eea; padding-bottom: 10px; }}
+                h3 {{ color: #444; margin-top: 30px; }}
+                .meta {{ background: #f0f0f0; padding: 15px; border-radius: 5px; margin: 20px 0; }}
+                .meta p {{ margin: 5px 0; }}
+                .evidence {{ margin: 20px 0; }}
+                .answer {{ background: #e8f4f8; padding: 20px; border-radius: 8px; margin: 20px 0; line-height: 1.8; }}
+                .stats {{ display: flex; gap: 20px; margin: 20px 0; }}
+                .stat-card {{ flex: 1; background: #f9f9f9; padding: 15px; border-radius: 5px; text-align: center; }}
+                .stat-card .number {{ font-size: 24px; font-weight: bold; color: #667eea; }}
+                .stat-card .label {{ font-size: 12px; color: #666; margin-top: 5px; }}
             </style>
         </head>
         <body>
-            <h2>查询记录</h2>
-            <p><strong>用户：</strong>{username}</p>
-            <p><strong>时间：</strong>{timestamp}</p>
-            <p><strong>查询：</strong>{query}</p>
-            
-            <h3>检索证据（{len(hits)}条）</h3>
-            <div class="evidence">
-                {'<br>'.join([f"{i+1}. {h.get('text', '')[:300]}" for i, h in enumerate(hits)])}
-            </div>
-            
-            <h3>AI回答</h3>
-            <div class="answer">
-                {answer.replace(chr(10), '<br>')}
+            <div class="container">
+                <h2>🔍 查询记录</h2>
+                <div class="meta">
+                    <p><strong>用户：</strong>{username}</p>
+                    <p><strong>时间：</strong>{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
+                    <p><strong>查询：</strong>{query}</p>
+                </div>
+                
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="number">{len(hits)}</div>
+                        <div class="label">检索命中数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="number">{len(sources_stats)}</div>
+                        <div class="label">数据源数量</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="number">{'是' if is_valid else '否'}</div>
+                        <div class="label">证据充分性</div>
+                    </div>
+                </div>
+                
+                <h3>📊 检索证据（{len(hits)}条）</h3>
+                <div class="evidence">
+                    {evidence_html if evidence_html else '<p>暂无检索结果</p>'}
+                </div>
+                
+                <h3>🤖 AI分析结果</h3>
+                <div class="answer">
+                    {answer.replace(chr(10), '<br>')}
+                </div>
+                
+                {f'<div style="color: red; margin-top: 20px;"><strong>错误信息：</strong>{llm_error}</div>' if llm_error else ''}
             </div>
         </body>
         </html>
@@ -300,6 +395,8 @@ async def chat_query(request: ChatRequest, username: str = Depends(verify_token)
         
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(html_content)
+        
+        print(f"查询记录已保存: {filepath}")
     except Exception as e:
         print(f"保存查询记录失败: {e}")
     
@@ -307,9 +404,11 @@ async def chat_query(request: ChatRequest, username: str = Depends(verify_token)
         "success": True,
         "query": query,
         "answer": answer,
-        "hits": hits,
+        "hits": hits[:10],  # 只返回前10条
+        "sources_stats": sources_stats,
         "valid": is_valid,
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.now().isoformat(),
+        "llm_error": llm_error
     }
 
 
@@ -362,6 +461,123 @@ async def get_config_info(username: str = Depends(verify_token)):
             }
         }
     }
+
+
+@app.post("/api/risk/assess")
+async def risk_assess(request: Dict[str, Any], username: str = Depends(verify_token)):
+    """
+    风险评估接口
+    接收企业数据，返回风险评分和分析报告
+    """
+    try:
+        from src.agent.models.risk_forecast import RiskForecaster
+        from src.agent.explainability import explain_contributions
+        from src.agent.reporting import generate_report
+        
+        # 获取输入数据
+        entity_id = request.get("entity_id", "未知企业")
+        record = request.get("data", {})
+        
+        if not record:
+            raise HTTPException(status_code=400, detail="缺少评估数据")
+        
+        # 初始化模型
+        forecaster = RiskForecaster()
+        
+        # 计算风险评分
+        risk_score = forecaster.score(record)
+        
+        # 计算特征贡献度
+        contributions = explain_contributions(record)
+        
+        # 生成报告
+        report_text = generate_report(
+            {"entity_id": entity_id, "company_name": entity_id},
+            risk_score,
+            contributions,
+            [], [], [], ""
+        )
+        
+        # 保存到数据库
+        db_path = os.environ.get("DB_PATH", DEFAULT_DB_PATH)
+        storage = Storage(db_path)
+        storage.init()
+        
+        timestamp = record.get("timestamp", datetime.now().strftime("%Y-%m-%d"))
+        assessment_id = storage.save_assessment(entity_id, timestamp, risk_score, "")
+        storage.save_report(assessment_id, report_text)
+        
+        # 保存特征
+        for feature, value in record.items():
+            if feature not in ["entity_id", "timestamp"]:
+                try:
+                    storage.save_feature(
+                        assessment_id,
+                        feature,
+                        float(value),
+                        float(contributions.get(feature, 0.0))
+                    )
+                except:
+                    pass
+        
+        return {
+            "success": True,
+            "entity_id": entity_id,
+            "risk_score": risk_score,
+            "risk_level": "高风险" if risk_score >= 0.7 else "中风险" if risk_score >= 0.5 else "低风险",
+            "contributions": contributions,
+            "report": report_text,
+            "assessment_id": assessment_id,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        print(f"风险评估错误: {e}")
+        raise HTTPException(status_code=500, detail=f"评估失败: {str(e)}")
+
+
+@app.get("/api/risk/history/{entity_id}")
+async def get_risk_history(entity_id: str, username: str = Depends(verify_token)):
+    """获取企业的历史风险评估记录"""
+    try:
+        db_path = os.environ.get("DB_PATH", DEFAULT_DB_PATH)
+        storage = Storage(db_path)
+        storage.init()
+        
+        # 查询历史记录
+        import sqlite3
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT id, timestamp, risk_score, decision
+            FROM assessments
+            WHERE entity_id = ?
+            ORDER BY timestamp DESC
+            LIMIT 50
+        """, (entity_id,))
+        
+        records = []
+        for row in cursor.fetchall():
+            records.append({
+                "id": row[0],
+                "timestamp": row[1],
+                "risk_score": row[2],
+                "decision": row[3]
+            })
+        
+        conn.close()
+        
+        return {
+            "success": True,
+            "entity_id": entity_id,
+            "count": len(records),
+            "records": records
+        }
+        
+    except Exception as e:
+        print(f"查询历史记录错误: {e}")
+        raise HTTPException(status_code=500, detail=f"查询失败: {str(e)}")
 
 
 @app.get("/api/health")
