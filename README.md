@@ -363,8 +363,7 @@ python -c "from src.agent.neo4j_client import Neo4jClient; print(Neo4jClient().a
 python -c "from src.agent.models.risk_forecast import RiskForecaster; print(RiskForecaster().score({'amount':1000, 'income':5000, 'credit_score':650, 'delinquencies':0, 'market_index':1200}))"
 ```
 
-## 项目结构（不含前后端）
-
+## 项目结构（V1.0版本）
 ```
 risk_agent/
 ├── app.py                    # 主程序入口
@@ -408,7 +407,7 @@ risk_agent/
 - ✅ 完善Web API服务
 - ✅ 优化报告生成和导出功能
 
-### 开发计划
+### 开发中
 - 🚧 集成更多金融SOTA模型（DeepAR、TFT）
 - 🚧 开发Web前端界面
 - 🚧 支持实时流数据处理
